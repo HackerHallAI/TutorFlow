@@ -57,7 +57,7 @@
 
 **Backend:**
 
-- **Framework:** FastAPI + Python 3.11+
+- **Framework:** FastAPI + Python 3.12+
 - **Database:** PostgreSQL (AWS RDS)
 - **Authentication:** JWT tokens with refresh mechanism
 - **File Storage:** AWS S3

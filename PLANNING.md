@@ -10,7 +10,7 @@
 ## Technology Stack
 
 ### Backend Architecture
-- **Framework:** FastAPI + Python 3.11+
+- **Framework:** FastAPI + Python 3.12+
 - **Database:** PostgreSQL (AWS RDS)
 - **ORM:** SQLAlchemy with SQLModel
 - **Authentication:** JWT tokens with refresh mechanism

@@ -21,7 +21,7 @@ A modern, full-stack tutoring platform built with FastAPI, Next.js 14, and AWS. 
 ### Technology Stack
 
 **Backend:**
-- **Framework:** FastAPI + Python 3.11+
+- **Framework:** FastAPI + Python 3.12+
 - **Database:** PostgreSQL (AWS RDS)
 - **ORM:** SQLAlchemy with SQLModel
 - **Authentication:** JWT tokens with refresh mechanism
@@ -55,7 +55,7 @@ A modern, full-stack tutoring platform built with FastAPI, Next.js 14, and AWS. 
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - Node.js 18+
 - PostgreSQL 15+
 - Docker (optional)
