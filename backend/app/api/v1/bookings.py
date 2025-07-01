@@ -1,0 +1,401 @@
+"""
+Bookings API endpoints.
+
+This module contains all booking-related endpoints including
+booking creation, management, and availability checking.
+"""
+
+from typing import List, Optional
+from datetime import datetime, date
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user, require_roles
+from app.database import get_db
+from app.models.user import User, UserRole
+from app.models.user import Booking, BookingStatus
+from app.models.user import Tutor
+from app.schemas.booking import (
+    BookingCreate,
+    BookingResponse,
+    BookingUpdate,
+    BookingList,
+    AvailabilityRequest,
+    AvailabilityResponse,
+)
+
+router = APIRouter(prefix="/bookings", tags=["bookings"])
+
+
+@router.post("/", response_model=BookingResponse)
+async def create_booking(
+    booking_data: BookingCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BookingResponse:
+    """
+    Create a new booking.
+
+    Args:
+        booking_data: Booking creation data
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        BookingResponse: Created booking information
+
+    Raises:
+        HTTPException: If validation fails or conflicts exist
+    """
+    # Verify tutor exists and is active
+    tutor = (
+        db.query(Tutor)
+        .filter(Tutor.id == booking_data.tutor_id, Tutor.is_active == True)
+        .first()
+    )
+
+    if not tutor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tutor not found or inactive"
+        )
+
+    # Check for booking conflicts
+    existing_booking = (
+        db.query(Booking)
+        .filter(
+            Booking.tutor_id == booking_data.tutor_id,
+            Booking.start_time < booking_data.end_time,
+            Booking.end_time > booking_data.start_time,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        )
+        .first()
+    )
+
+    if existing_booking:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Booking time conflicts with existing booking",
+        )
+
+    # Create booking
+    booking = Booking(
+        student_id=current_user.id,
+        tutor_id=booking_data.tutor_id,
+        subject=booking_data.subject,
+        start_time=booking_data.start_time,
+        end_time=booking_data.end_time,
+        notes=booking_data.notes,
+        status=BookingStatus.PENDING,
+    )
+
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+
+    return BookingResponse(
+        id=booking.id,
+        student_id=booking.student_id,
+        tutor_id=booking.tutor_id,
+        subject=booking.subject,
+        start_time=booking.start_time,
+        end_time=booking.end_time,
+        notes=booking.notes,
+        status=booking.status,
+        created_at=booking.created_at,
+    )
+
+
+@router.get("/", response_model=List[BookingList])
+async def list_bookings(
+    status: Optional[BookingStatus] = Query(
+        None, description="Filter by booking status"
+    ),
+    start_date: Optional[date] = Query(None, description="Filter by start date"),
+    end_date: Optional[date] = Query(None, description="Filter by end date"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[BookingList]:
+    """
+    List user's bookings.
+
+    Args:
+        status: Filter by booking status
+        start_date: Filter by start date
+        end_date: Filter by end date
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        List[BookingList]: List of user's bookings
+    """
+    query = db.query(Booking)
+
+    # Filter by user role
+    if current_user.role == UserRole.TUTOR:
+        query = query.filter(Booking.tutor_id == current_user.id)
+    elif current_user.role == UserRole.STUDENT:
+        query = query.filter(Booking.student_id == current_user.id)
+    elif current_user.role == UserRole.ADMIN:
+        # Admins can see all bookings
+        pass
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
+        )
+
+    # Apply filters
+    if status:
+        query = query.filter(Booking.status == status)
+
+    if start_date:
+        query = query.filter(Booking.start_time >= start_date)
+
+    if end_date:
+        query = query.filter(Booking.end_time <= end_date)
+
+    bookings = query.order_by(Booking.start_time.desc()).all()
+
+    return [
+        BookingList(
+            id=booking.id,
+            student_id=booking.student_id,
+            tutor_id=booking.tutor_id,
+            subject=booking.subject,
+            start_time=booking.start_time,
+            end_time=booking.end_time,
+            status=booking.status,
+            created_at=booking.created_at,
+        )
+        for booking in bookings
+    ]
+
+
+@router.get("/{booking_id}", response_model=BookingResponse)
+async def get_booking(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BookingResponse:
+    """
+    Get booking details.
+
+    Args:
+        booking_id: ID of the booking to retrieve
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        BookingResponse: Booking details
+
+    Raises:
+        HTTPException: If booking not found or access denied
+    """
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found"
+        )
+
+    # Check access permissions
+    if (
+        current_user.role != UserRole.ADMIN
+        and booking.student_id != current_user.id
+        and booking.tutor_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+
+    return BookingResponse(
+        id=booking.id,
+        student_id=booking.student_id,
+        tutor_id=booking.tutor_id,
+        subject=booking.subject,
+        start_time=booking.start_time,
+        end_time=booking.end_time,
+        notes=booking.notes,
+        status=booking.status,
+        created_at=booking.created_at,
+    )
+
+
+@router.put("/{booking_id}", response_model=BookingResponse)
+async def update_booking(
+    booking_id: int,
+    booking_update: BookingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> BookingResponse:
+    """
+    Update booking details.
+
+    Args:
+        booking_id: ID of the booking to update
+        booking_update: Booking update data
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        BookingResponse: Updated booking details
+
+    Raises:
+        HTTPException: If booking not found or access denied
+    """
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found"
+        )
+
+    # Check access permissions
+    if (
+        current_user.role != UserRole.ADMIN
+        and booking.student_id != current_user.id
+        and booking.tutor_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+
+    # Update booking fields
+    if booking_update.notes is not None:
+        booking.notes = booking_update.notes
+
+    if booking_update.status is not None:
+        # Only tutors and admins can change status
+        if current_user.role not in [UserRole.TUTOR, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only tutors and admins can change booking status",
+            )
+        booking.status = booking_update.status
+
+    db.commit()
+    db.refresh(booking)
+
+    return BookingResponse(
+        id=booking.id,
+        student_id=booking.student_id,
+        tutor_id=booking.tutor_id,
+        subject=booking.subject,
+        start_time=booking.start_time,
+        end_time=booking.end_time,
+        notes=booking.notes,
+        status=booking.status,
+        created_at=booking.created_at,
+    )
+
+
+@router.delete("/{booking_id}")
+async def cancel_booking(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Cancel a booking.
+
+    Args:
+        booking_id: ID of the booking to cancel
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If booking not found or access denied
+    """
+    booking = db.query(Booking).filter(Booking.id == booking_id).first()
+
+    if not booking:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found"
+        )
+
+    # Check access permissions
+    if (
+        current_user.role != UserRole.ADMIN
+        and booking.student_id != current_user.id
+        and booking.tutor_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+
+    # Only allow cancellation of pending or confirmed bookings
+    if booking.status not in [BookingStatus.PENDING, BookingStatus.CONFIRMED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot cancel booking with current status",
+        )
+
+    booking.status = BookingStatus.CANCELLED
+    db.commit()
+
+    return {"message": "Booking cancelled successfully"}
+
+
+@router.post("/availability/{tutor_id}", response_model=AvailabilityResponse)
+async def check_availability(
+    tutor_id: int,
+    availability_request: AvailabilityRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AvailabilityResponse:
+    """
+    Check tutor availability for a specific time period.
+
+    Args:
+        tutor_id: ID of the tutor to check
+        availability_request: Time period to check
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        AvailabilityResponse: Availability information
+
+    Raises:
+        HTTPException: If tutor not found
+    """
+    # Verify tutor exists
+    tutor = (
+        db.query(Tutor).filter(Tutor.id == tutor_id, Tutor.is_active == True).first()
+    )
+
+    if not tutor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tutor not found"
+        )
+
+    # Check for conflicting bookings
+    conflicting_bookings = (
+        db.query(Booking)
+        .filter(
+            Booking.tutor_id == tutor_id,
+            Booking.start_time < availability_request.end_time,
+            Booking.end_time > availability_request.start_time,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        )
+        .all()
+    )
+
+    is_available = len(conflicting_bookings) == 0
+
+    return AvailabilityResponse(
+        tutor_id=tutor_id,
+        start_time=availability_request.start_time,
+        end_time=availability_request.end_time,
+        is_available=is_available,
+        conflicting_bookings=[
+            {
+                "id": booking.id,
+                "start_time": booking.start_time,
+                "end_time": booking.end_time,
+                "status": booking.status,
+            }
+            for booking in conflicting_bookings
+        ],
+    )

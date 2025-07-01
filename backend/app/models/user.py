@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     Float,
     Integer,
+    ForeignKey,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -50,6 +51,16 @@ class User(Base):
     # Relationships
     profile = relationship("UserProfile", back_populates="user", uselist=False)
     tutor_profile = relationship("Tutor", back_populates="user", uselist=False)
+    student_bookings = relationship(
+        "Booking",
+        foreign_keys=lambda: [Booking.student_id],
+        back_populates="student",
+    )
+    tutor_bookings = relationship(
+        "Booking",
+        foreign_keys=lambda: [Booking.tutor_id],
+        back_populates="tutor",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"
@@ -60,7 +71,7 @@ class UserProfile(Base):
 
     __tablename__ = "user_profiles"
 
-    user_id: str = Column(UUID(as_uuid=True), primary_key=True)
+    user_id: str = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     first_name: str = Column(String(100), nullable=False)
     last_name: str = Column(String(100), nullable=False)
     phone: Optional[str] = Column(String(20))
@@ -84,7 +95,7 @@ class Tutor(Base):
 
     __tablename__ = "tutors"
 
-    user_id: str = Column(UUID(as_uuid=True), primary_key=True)
+    user_id: str = Column(UUID(as_uuid=True), ForeignKey("users.id"), primary_key=True)
     subjects: str = Column(Text, nullable=False)  # JSON string of subjects
     hourly_rate: float = Column(Float, nullable=False)
     availability_schedule: Optional[str] = Column(Text)  # JSON string of schedule
@@ -187,3 +198,47 @@ class UserProfileResponse(UserProfileBase):
 
     class Config:
         from_attributes = True
+
+
+# BookingStatus enum and Booking model moved from booking.py
+from enum import Enum as PyEnumBase
+from sqlalchemy import Enum as SQLEnum
+
+
+class BookingStatus(str, PyEnumBase):
+    """Booking status enumeration."""
+
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+    NO_SHOW = "no_show"
+
+
+class Booking(Base):
+    """Booking model."""
+
+    __tablename__ = "bookings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    tutor_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    subject = Column(String(100), nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=False)
+    notes = Column(Text, nullable=True)
+    status = Column(
+        SQLEnum(BookingStatus), default=BookingStatus.PENDING, nullable=False
+    )
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    # Relationships
+    student = relationship(
+        "User", foreign_keys=[student_id], back_populates="student_bookings"
+    )
+    tutor = relationship(
+        "User", foreign_keys=[tutor_id], back_populates="tutor_bookings"
+    )

@@ -1,35 +1,9 @@
 """
-Models package for TutorFlow application.
+Database models for TutorFlow backend.
+
+This package contains all SQLAlchemy models for the application.
 """
 
-from app.models.user import (
-    User,
-    UserProfile,
-    Tutor,
-    StudentParent,
-    UserRole,
-    UserBase,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserProfileBase,
-    UserProfileCreate,
-    UserProfileUpdate,
-    UserProfileResponse,
-)
+from .user import User, UserRole, Tutor
 
-__all__ = [
-    "User",
-    "UserProfile",
-    "Tutor",
-    "StudentParent",
-    "UserRole",
-    "UserBase",
-    "UserCreate",
-    "UserUpdate",
-    "UserResponse",
-    "UserProfileBase",
-    "UserProfileCreate",
-    "UserProfileUpdate",
-    "UserProfileResponse",
-]
+__all__ = ["User", "UserRole", "Tutor"]

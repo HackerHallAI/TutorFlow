@@ -1,0 +1,264 @@
+"""
+Users API endpoints.
+
+This module contains all user management endpoints including
+profile management, user listing, and role management.
+"""
+
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+
+from app.core.auth import get_current_user, require_roles
+from app.database import get_db
+from app.models.user import User, UserRole
+from app.schemas.user import UserProfile, UserProfileUpdate, UserList, UserDetail
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/profile", response_model=UserProfile)
+async def get_user_profile(
+    current_user: User = Depends(get_current_user),
+) -> UserProfile:
+    """
+    Get current user's profile.
+
+    Args:
+        current_user: Current authenticated user
+
+    Returns:
+        UserProfile: User profile information
+    """
+    return UserProfile(
+        id=current_user.id,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at,
+    )
+
+
+@router.put("/profile", response_model=UserProfile)
+async def update_user_profile(
+    profile_update: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserProfile:
+    """
+    Update current user's profile.
+
+    Args:
+        profile_update: Profile update data
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        UserProfile: Updated user profile
+
+    Raises:
+        HTTPException: If validation fails
+    """
+    # Update user fields
+    if profile_update.first_name is not None:
+        current_user.first_name = profile_update.first_name
+    if profile_update.last_name is not None:
+        current_user.last_name = profile_update.last_name
+
+    db.commit()
+    db.refresh(current_user)
+
+    return UserProfile(
+        id=current_user.id,
+        email=current_user.email,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at,
+    )
+
+
+@router.get("/", response_model=List[UserList])
+@require_roles([UserRole.ADMIN])
+async def list_users(
+    skip: int = Query(0, ge=0, description="Number of users to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of users to return"),
+    role: Optional[UserRole] = Query(None, description="Filter by user role"),
+    search: Optional[str] = Query(None, description="Search by name or email"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[UserList]:
+    """
+    List all users (admin only).
+
+    Args:
+        skip: Number of users to skip for pagination
+        limit: Maximum number of users to return
+        role: Filter by user role
+        search: Search term for name or email
+        current_user: Current authenticated user (must be admin)
+        db: Database session
+
+    Returns:
+        List[UserList]: List of users
+
+    Raises:
+        HTTPException: If user is not admin
+    """
+    query = db.query(User)
+
+    # Apply filters
+    if role:
+        query = query.filter(User.role == role)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (User.first_name.ilike(search_term))
+            | (User.last_name.ilike(search_term))
+            | (User.email.ilike(search_term))
+        )
+
+    users = query.offset(skip).limit(limit).all()
+
+    return [
+        UserList(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.role,
+            is_active=user.is_active,
+            created_at=user.created_at,
+        )
+        for user in users
+    ]
+
+
+@router.get("/{user_id}", response_model=UserDetail)
+@require_roles([UserRole.ADMIN])
+async def get_user_detail(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserDetail:
+    """
+    Get detailed user information (admin only).
+
+    Args:
+        user_id: ID of the user to retrieve
+        current_user: Current authenticated user (must be admin)
+        db: Database session
+
+    Returns:
+        UserDetail: Detailed user information
+
+    Raises:
+        HTTPException: If user not found or current user is not admin
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    return UserDetail(
+        id=user.id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role,
+        is_active=user.is_active,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+    )
+
+
+@router.put("/{user_id}/role")
+@require_roles([UserRole.ADMIN])
+async def update_user_role(
+    user_id: int,
+    role: UserRole,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Update user role (admin only).
+
+    Args:
+        user_id: ID of the user to update
+        role: New role for the user
+        current_user: Current authenticated user (must be admin)
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If user not found or current user is not admin
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    # Prevent admin from changing their own role
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot change your own role",
+        )
+
+    user.role = role
+    db.commit()
+
+    return {"message": f"User role updated to {role.value}"}
+
+
+@router.put("/{user_id}/status")
+@require_roles([UserRole.ADMIN])
+async def update_user_status(
+    user_id: int,
+    is_active: bool,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Update user active status (admin only).
+
+    Args:
+        user_id: ID of the user to update
+        is_active: New active status
+        current_user: Current authenticated user (must be admin)
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If user not found or current user is not admin
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    # Prevent admin from deactivating themselves
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot deactivate your own account",
+        )
+
+    user.is_active = is_active
+    db.commit()
+
+    status_text = "activated" if is_active else "deactivated"
+    return {"message": f"User {status_text} successfully"}
