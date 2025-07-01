@@ -27,6 +27,7 @@ from app.schemas.auth import (
     RegisterResponse,
     TokenRefreshRequest,
     TokenRefreshResponse,
+    CurrentUserResponse,
 )
 from app.config import settings
 
@@ -34,10 +35,10 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
 
 
-@router.post("/register", response_model=RegisterResponse)
+@router.post("/register", response_model=LoginResponse)
 async def register(
     request: RegisterRequest, db: Session = Depends(get_db)
-) -> RegisterResponse:
+) -> LoginResponse:
     """
     Register a new user.
 
@@ -81,13 +82,19 @@ async def register(
     db.refresh(user)
     db.refresh(user_profile)
 
-    return RegisterResponse(
-        id=str(user.id),
+    # Create tokens for the new user
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
+
+    return LoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        user_id=str(user.id),
         email=user.email,
         first_name=user_profile.first_name,
         last_name=user_profile.last_name,
         role=user.role,
-        message="User registered successfully",
     )
 
 
@@ -188,10 +195,10 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     return {"message": "Successfully logged out"}
 
 
-@router.get("/me")
+@router.get("/me", response_model=CurrentUserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-) -> dict:
+) -> CurrentUserResponse:
     """
     Get current user information.
 
@@ -200,18 +207,18 @@ async def get_current_user_info(
         db: Database session
 
     Returns:
-        dict: Current user information
+        CurrentUserResponse: Current user information
     """
     user_profile = (
         db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     )
     first_name = user_profile.first_name if user_profile else ""
     last_name = user_profile.last_name if user_profile else ""
-    return {
-        "id": str(current_user.id),
-        "email": current_user.email,
-        "first_name": first_name,
-        "last_name": last_name,
-        "role": current_user.role,
-        "is_active": current_user.is_active,
-    }
+    return CurrentUserResponse(
+        id=str(current_user.id),
+        email=current_user.email,
+        first_name=first_name,
+        last_name=last_name,
+        role=current_user.role,
+        is_active=current_user.is_active,
+    )

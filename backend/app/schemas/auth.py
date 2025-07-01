@@ -70,3 +70,14 @@ class TokenRefreshResponse(BaseModel):
 
     access_token: str = Field(..., description="New JWT access token")
     token_type: str = Field(..., description="Token type (bearer)")
+
+
+class CurrentUserResponse(BaseModel):
+    """Response model for current user information."""
+
+    id: str = Field(..., description="User ID")
+    email: str = Field(..., description="User email address")
+    first_name: str = Field(..., description="User first name")
+    last_name: str = Field(..., description="User last name")
+    role: UserRole = Field(..., description="User role")
+    is_active: bool = Field(..., description="User active status")

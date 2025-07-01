@@ -20,12 +20,51 @@
 - **API Documentation:** Auto-generated with FastAPI/Swagger
 
 ### Frontend Architecture
-- **Framework:** Next.js 14 with TypeScript
-- **Styling:** Tailwind CSS
+- **Framework:** Next.js 15 with TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui components
 - **State Management:** React Context + hooks
 - **Forms:** React Hook Form + Zod validation
 - **HTTP Client:** Axios or Fetch API
-- **Routing:** App Router (Next.js 14)
+- **Routing:** App Router (Next.js 15)
+
+### shadcn/ui Component Strategy
+**Key Components to Implement:**
+
+**Layout & Navigation:**
+- `Button` - Primary actions, form submissions
+- `Card` - Content containers, tutor profiles, booking cards
+- `Navigation Menu` - Main site navigation
+- `Sheet` - Mobile navigation and side panels
+- `Separator` - Visual dividers
+
+**Forms & Input:**
+- `Input` - Text fields, search
+- `Textarea` - Bio, notes, messages
+- `Select` - Role selection, subject filtering
+- `Checkbox` - Terms acceptance, preferences
+- `Radio Group` - Single choice options
+- `Date Picker` - Booking date selection
+- `Time Picker` - Booking time selection
+- `Form` - React Hook Form integration
+
+**Data Display:**
+- `Table` - Booking history, tutor lists
+- `Badge` - Status indicators, tags
+- `Avatar` - User profile pictures
+- `Progress` - Loading states, completion
+- `Calendar` - Availability display
+
+**Feedback & Modals:**
+- `Dialog` - Confirmations, booking details
+- `Toast` - Success/error notifications
+- `Alert` - Important messages
+- `Skeleton` - Loading states
+
+**Advanced Components:**
+- `Tabs` - Dashboard sections
+- `Accordion` - FAQ, collapsible content
+- `Dropdown Menu` - User menu, actions
+- `Command` - Search functionality
 
 ### Infrastructure (AWS)
 - **Compute:** ECS with Fargate containers
@@ -242,7 +281,7 @@ backend/
 ### Frontend Structure
 ```
 frontend/
-├── app/                       # Next.js 14 app router
+├── app/                       # Next.js 15 app router
 │   ├── layout.tsx
 │   ├── page.tsx
 │   ├── globals.css
@@ -288,7 +327,7 @@ frontend/
 - **Validation:** Use Pydantic for all data validation
 
 #### TypeScript (Frontend)
-- **Framework:** Next.js 14 with App Router
+- **Framework:** Next.js 15 with App Router
 - **Styling:** Tailwind CSS with component-based approach
 - **State Management:** React Context + hooks
 - **Forms:** React Hook Form + Zod validation

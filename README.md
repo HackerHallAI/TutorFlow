@@ -1,6 +1,6 @@
 # TutorFlow
 
-A modern, full-stack tutoring platform built with FastAPI, Next.js 14, and AWS. This project serves as a portfolio piece demonstrating advanced web development capabilities, AWS infrastructure expertise, and complex system integration.
+A modern, full-stack tutoring platform built with FastAPI, Next.js 15, and AWS. This project serves as a portfolio piece demonstrating advanced web development capabilities, AWS infrastructure expertise, and complex system integration.
 
 ## 🎯 Project Overview
 
@@ -30,7 +30,7 @@ A modern, full-stack tutoring platform built with FastAPI, Next.js 14, and AWS. 
 - **Email:** AWS SES
 
 **Frontend:**
-- **Framework:** Next.js 14 with TypeScript
+- **Framework:** Next.js 15 with TypeScript
 - **Styling:** Tailwind CSS
 - **State Management:** React Context + hooks
 - **Forms:** React Hook Form + Zod validation

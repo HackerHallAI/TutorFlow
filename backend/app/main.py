@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 # Add trusted host middleware
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_origins)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"])
 
 # Include API routes
 app.include_router(auth.router, prefix="/api/v1")

@@ -79,23 +79,23 @@
   - **Due:** Week 2
   - **Status:** Finished
 
-- [ ] **Task 2.4:** Initialize Next.js frontend
-  - [ ] Create Next.js 14 project with TypeScript
-  - [ ] Set up Tailwind CSS
-  - [ ] Configure ESLint and Prettier
-  - [ ] Set up project structure (app router)
-  - [ ] Create basic layout components
+- [x] **Task 2.4:** Initialize Next.js frontend
+  - [x] Create Next.js 15 project with TypeScript
+  - [x] Set up Tailwind CSS + shadcn/ui components
+  - [x] Configure ESLint and Prettier
+  - [x] Set up project structure (app router)
+  - [x] Create basic layout components
   - **Due:** Week 2
-  - **Status:** Not Started
+  - **Status:** Finished
 
-- [ ] **Task 2.5:** Create authentication flow in frontend
-  - [ ] Login/Register forms with React Hook Form
-  - [ ] JWT token storage and management
-  - [ ] Protected route components
-  - [ ] Authentication context provider
-  - [ ] Form validation with Zod
+- [x] **Task 2.5:** Create authentication flow in frontend
+  - [x] Login/Register forms with React Hook Form
+  - [x] JWT token storage and management
+  - [x] Protected route components
+  - [x] Authentication context provider
+  - [x] Form validation with Zod
   - **Due:** Week 2
-  - **Status:** Not Started
+  - **Status:** Finished
 
 ## Phase 2: Core Business Logic (Weeks 3-4)
 
@@ -376,4 +376,4 @@
 
 **Last Updated:** [Current Date]  
 **Next Review:** [Weekly]  
-**Project Status:** Foundation Phase - Authentication Complete 
+**Project Status:** Foundation Phase - Frontend & Authentication Complete 

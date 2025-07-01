@@ -66,8 +66,8 @@
 
 **Frontend:**
 
-- **Framework:** Next.js 14 with TypeScript
-- **Styling:** Tailwind CSS
+- **Framework:** Next.js 15 with TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui components
 - **State Management:** React Context + hooks
 - **Forms:** React Hook Form + Zod validation
 - **HTTP Client:** Axios or Fetch API
