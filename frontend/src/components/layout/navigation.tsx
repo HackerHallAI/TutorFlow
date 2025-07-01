@@ -39,11 +39,22 @@ export function Navigation() {
     <nav className="border-b bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-6">
             <Link href="/dashboard" className="flex items-center space-x-2">
               <BookOpen className="h-8 w-8 text-blue-600" />
               <span className="text-xl font-bold text-gray-900">TutorFlow</span>
             </Link>
+            
+            {user && (
+              <div className="hidden md:flex items-center space-x-4">
+                <Link href="/tutors" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                  Find Tutors
+                </Link>
+                <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                  My Bookings
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-4">

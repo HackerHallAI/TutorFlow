@@ -102,8 +102,8 @@
 ### Week 3: Tutor System & Booking Backend
 - [x] **Task 3.1:** Implement tutor profile system
   - [x] Tutor model with subjects, rates, availability
-  - [ ] GET /users/tutors endpoint
-  - [ ] GET /users/tutors/{id} endpoint
+  - [x] GET /users/tutors endpoint
+  - [x] GET /users/tutors/{id} endpoint
   - [ ] Tutor profile creation/update endpoints
   - [ ] Subject and rate management
   - **Due:** Week 3

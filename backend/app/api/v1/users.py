@@ -8,10 +8,11 @@ profile management, user listing, and role management.
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.auth import get_current_user, require_roles
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, Tutor, UserProfile as UserProfileModel
 from app.schemas.user import UserProfile, UserProfileUpdate, UserList, UserDetail
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -140,10 +141,107 @@ async def list_users(
     ]
 
 
+@router.get("/tutors")
+async def list_tutors(
+    skip: int = Query(0, ge=0, description="Number of tutors to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of tutors to return"),
+    subject: str = Query(None, description="Filter by subject"),
+    min_rate: float = Query(None, ge=0, description="Minimum hourly rate"),
+    max_rate: float = Query(None, ge=0, description="Maximum hourly rate"),
+    db: Session = Depends(get_db),
+):
+    from sqlalchemy import func
+
+    query = (
+        db.query(Tutor, User, UserProfileModel)
+        .join(User, Tutor.user_id == User.id)
+        .join(UserProfileModel, User.id == UserProfileModel.user_id)
+        .filter(User.is_active == True, Tutor.is_verified == True)
+    )
+    if subject:
+        query = query.filter(func.lower(Tutor.subjects).like(f"%{subject.lower()}%"))
+    if min_rate is not None:
+        query = query.filter(Tutor.hourly_rate >= min_rate)
+    if max_rate is not None:
+        query = query.filter(Tutor.hourly_rate <= max_rate)
+    results = query.offset(skip).limit(limit).all()
+    tutors = []
+    for tutor, user, profile in results:
+        tutors.append(
+            {
+                "id": tutor.user_id,
+                "email": user.email,
+                "first_name": profile.first_name,
+                "last_name": profile.last_name,
+                "bio": profile.bio,
+                "avatar_url": profile.avatar_url,
+                "subjects": tutor.subjects,
+                "hourly_rate": tutor.hourly_rate,
+                "rating": tutor.rating,
+                "total_sessions": tutor.total_sessions,
+                "is_verified": tutor.is_verified,
+                "created_at": tutor.created_at,
+            }
+        )
+    return tutors
+
+
+@router.get("/tutors/{tutor_id}", response_model=dict)
+async def get_tutor_detail(
+    tutor_id: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Get detailed tutor information.
+
+    Args:
+        tutor_id: ID of the tutor to retrieve
+        db: Database session
+
+    Returns:
+        dict: Detailed tutor information
+
+    Raises:
+        HTTPException: If tutor not found
+    """
+    result = (
+        db.query(Tutor, User, UserProfileModel)
+        .join(User, Tutor.user_id == User.id)
+        .join(UserProfileModel, User.id == UserProfileModel.user_id)
+        .filter(Tutor.user_id == tutor_id, User.is_active == True)
+        .first()
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tutor not found"
+        )
+
+    tutor, user, profile = result
+
+    return {
+        "id": tutor.user_id,
+        "email": user.email,
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
+        "bio": profile.bio,
+        "avatar_url": profile.avatar_url,
+        "phone": profile.phone,
+        "subjects": tutor.subjects,
+        "hourly_rate": tutor.hourly_rate,
+        "availability_schedule": tutor.availability_schedule,
+        "rating": tutor.rating,
+        "total_sessions": tutor.total_sessions,
+        "is_verified": tutor.is_verified,
+        "created_at": tutor.created_at,
+        "updated_at": tutor.updated_at,
+    }
+
+
 @router.get("/{user_id}", response_model=UserDetail)
 @require_roles([UserRole.ADMIN])
 async def get_user_detail(
-    user_id: int,
+    user_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserDetail:
@@ -182,7 +280,7 @@ async def get_user_detail(
 @router.put("/{user_id}/role")
 @require_roles([UserRole.ADMIN])
 async def update_user_role(
-    user_id: int,
+    user_id: str,
     role: UserRole,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -224,7 +322,7 @@ async def update_user_role(
 @router.put("/{user_id}/status")
 @require_roles([UserRole.ADMIN])
 async def update_user_status(
-    user_id: int,
+    user_id: str,
     is_active: bool,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
