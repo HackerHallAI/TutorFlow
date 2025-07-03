@@ -83,8 +83,12 @@ async def register(
     db.refresh(user_profile)
 
     # Create tokens for the new user
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
+    access_token = create_access_token(
+        data={"sub": user.email, "role": user.role.value}
+    )
+    refresh_token = create_refresh_token(
+        data={"sub": user.email, "role": user.role.value}
+    )
 
     return LoginResponse(
         access_token=access_token,
@@ -121,8 +125,12 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)) -> LoginRe
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
+    access_token = create_access_token(
+        data={"sub": user.email, "role": user.role.value}
+    )
+    refresh_token = create_refresh_token(
+        data={"sub": user.email, "role": user.role.value}
+    )
 
     # Get user profile for first_name and last_name
     user_profile = db.query(UserProfile).filter(UserProfile.user_id == user.id).first()

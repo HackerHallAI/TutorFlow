@@ -285,7 +285,7 @@ export default function TutorDashboardPage() {
                     Set your availability schedule to receive more booking requests.
                   </p>
                   <Button asChild variant="outline">
-                    <Link href="/availability" className="flex items-center space-x-2">
+                    <Link href="/dashboard/tutor/availability" className="flex items-center space-x-2">
                       <span>Set Availability</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>

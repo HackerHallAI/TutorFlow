@@ -319,3 +319,6 @@ tmp/
 temp/
 .tmp/
 .temp/ 
+
+
+*tmp_commands.txt

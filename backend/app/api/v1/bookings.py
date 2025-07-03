@@ -6,9 +6,10 @@ booking creation, management, and availability checking.
 """
 
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, time, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+import json
 
 from app.core.auth import get_current_user, require_roles
 from app.database import get_db
@@ -28,6 +29,8 @@ router = APIRouter(prefix="/bookings", tags=["bookings"])
 
 
 @router.post("/", response_model=BookingResponse)
+@router.post("", response_model=BookingResponse)
+@require_roles([UserRole.STUDENT])
 async def create_booking(
     booking_data: BookingCreate,
     current_user: User = Depends(get_current_user),
@@ -48,11 +51,7 @@ async def create_booking(
         HTTPException: If validation fails or conflicts exist
     """
     # Verify tutor exists and is active
-    tutor = (
-        db.query(Tutor)
-        .filter(Tutor.id == booking_data.tutor_id, Tutor.is_active == True)
-        .first()
-    )
+    tutor = db.query(Tutor).filter(Tutor.user_id == booking_data.tutor_id).first()
 
     if not tutor:
         raise HTTPException(
@@ -94,8 +93,8 @@ async def create_booking(
 
     return BookingResponse(
         id=booking.id,
-        student_id=booking.student_id,
-        tutor_id=booking.tutor_id,
+        student_id=str(booking.student_id),
+        tutor_id=str(booking.tutor_id),
         subject=booking.subject,
         start_time=booking.start_time,
         end_time=booking.end_time,
@@ -106,6 +105,7 @@ async def create_booking(
 
 
 @router.get("/", response_model=List[BookingList])
+@router.get("", response_model=List[BookingList])
 async def list_bookings(
     status: Optional[BookingStatus] = Query(
         None, description="Filter by booking status"
@@ -209,8 +209,8 @@ async def get_booking(
 
     return BookingResponse(
         id=booking.id,
-        student_id=booking.student_id,
-        tutor_id=booking.tutor_id,
+        student_id=str(booking.student_id),
+        tutor_id=str(booking.tutor_id),
         subject=booking.subject,
         start_time=booking.start_time,
         end_time=booking.end_time,
@@ -277,8 +277,8 @@ async def update_booking(
 
     return BookingResponse(
         id=booking.id,
-        student_id=booking.student_id,
-        tutor_id=booking.tutor_id,
+        student_id=str(booking.student_id),
+        tutor_id=str(booking.tutor_id),
         subject=booking.subject,
         start_time=booking.start_time,
         end_time=booking.end_time,
@@ -361,9 +361,7 @@ async def check_availability(
         HTTPException: If tutor not found
     """
     # Verify tutor exists
-    tutor = (
-        db.query(Tutor).filter(Tutor.id == tutor_id, Tutor.is_active == True).first()
-    )
+    tutor = db.query(Tutor).filter(Tutor.user_id == tutor_id).first()
 
     if not tutor:
         raise HTTPException(
@@ -399,3 +397,93 @@ async def check_availability(
             for booking in conflicting_bookings
         ],
     )
+
+
+@router.get("/slots/{tutor_id}")
+async def get_available_slots(
+    tutor_id: str,
+    date_str: str = Query(..., description="Date in YYYY-MM-DD format"),
+    duration: int = Query(30, description="Session duration in minutes (30 or 60)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get available 15-min start slots for a tutor on a given day.
+    Considers tutor's weekly schedule, existing bookings, and 15-min buffer after each session.
+
+    Args:
+        tutor_id: Tutor's user ID
+        date_str: Date in YYYY-MM-DD format
+        duration: Session duration in minutes (30 or 60)
+        db: Database session
+
+    Returns:
+        dict: { slots: ["09:00", "09:15", ...] }
+    """
+    # Validate duration
+    if duration not in [30, 60]:
+        raise HTTPException(status_code=400, detail="Duration must be 30 or 60 minutes")
+
+    # Parse date
+    try:
+        day_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+
+    # Get tutor and schedule
+    tutor = db.query(Tutor).filter(Tutor.user_id == tutor_id).first()
+    if not tutor:
+        raise HTTPException(status_code=404, detail="Tutor not found")
+    if not tutor.availability_schedule:
+        return {"slots": []}
+    try:
+        schedule = json.loads(tutor.availability_schedule)
+    except Exception:
+        return {"slots": []}
+
+    # Get weekday name (e.g., 'monday')
+    weekday = day_date.strftime("%A").lower()
+    day_blocks = schedule.get(weekday, [])
+    if not day_blocks:
+        return {"slots": []}
+
+    # Get all bookings for that day
+    day_start = datetime.combine(day_date, time(0, 0))
+    day_end = datetime.combine(day_date, time(23, 59, 59))
+    bookings = (
+        db.query(Booking)
+        .filter(
+            Booking.tutor_id == tutor_id,
+            Booking.start_time < day_end,
+            Booking.end_time > day_start,
+            Booking.status.in_([BookingStatus.CONFIRMED, BookingStatus.PENDING]),
+        )
+        .all()
+    )
+    # Build list of (start, end) for each booking, including 15-min buffer after
+    booking_blocks = []
+    for b in bookings:
+        booking_blocks.append((b.start_time, b.end_time + timedelta(minutes=15)))
+
+    # Generate all possible 15-min start slots within available blocks
+    slots = []
+    for block in day_blocks:
+        block_start = datetime.combine(
+            day_date, datetime.strptime(block[0], "%H:%M").time()
+        )
+        block_end = datetime.combine(
+            day_date, datetime.strptime(block[1], "%H:%M").time()
+        )
+        slot = block_start
+        while slot + timedelta(minutes=duration) <= block_end:
+            slot_end = slot + timedelta(minutes=duration)
+            # Check for conflicts with bookings (including buffer)
+            conflict = False
+            for b_start, b_end in booking_blocks:
+                # Block if slot overlaps with any booking+buffer
+                if slot < b_end and slot_end > b_start:
+                    conflict = True
+                    break
+            if not conflict:
+                slots.append(slot.strftime("%H:%M"))
+            slot += timedelta(minutes=15)
+    return {"slots": slots}

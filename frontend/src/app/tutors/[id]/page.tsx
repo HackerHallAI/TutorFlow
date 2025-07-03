@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, BookOpen, Users, Clock } from 'lucide-react';
 import { Navigation } from '@/components/layout/navigation';
+import { BookingForm } from '@/components/bookings/booking-form';
 
 export default function TutorProfilePage() {
   const params = useParams();
@@ -17,6 +18,7 @@ export default function TutorProfilePage() {
   const [tutor, setTutor] = useState<TutorDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showBooking, setShowBooking] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -118,11 +120,26 @@ export default function TutorProfilePage() {
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <span className="font-semibold">${tutor.hourly_rate}/hr</span>
               </div>
-              <Button disabled variant="outline">Book Now (Coming Soon)</Button>
+              <Button onClick={() => setShowBooking(true)}>Book Now</Button>
             </div>
           </CardContent>
         </Card>
       </div>
+      {showBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-xl"
+              onClick={() => setShowBooking(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <h2 className="text-xl font-semibold mb-4">Book a Session with {tutor.first_name}</h2>
+            <BookingForm tutorId={tutor.id} subjects={subjects} onSuccess={() => setShowBooking(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

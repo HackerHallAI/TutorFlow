@@ -15,7 +15,7 @@ from app.models.user import BookingStatus
 class BookingCreate(BaseModel):
     """Booking creation request model."""
 
-    tutor_id: int = Field(..., description="Tutor ID")
+    tutor_id: str = Field(..., description="Tutor ID")
     subject: str = Field(
         ..., min_length=1, max_length=100, description="Subject being tutored"
     )
@@ -28,8 +28,8 @@ class BookingResponse(BaseModel):
     """Booking response model."""
 
     id: int = Field(..., description="Booking ID")
-    student_id: int = Field(..., description="Student ID")
-    tutor_id: int = Field(..., description="Tutor ID")
+    student_id: str = Field(..., description="Student ID")
+    tutor_id: str = Field(..., description="Tutor ID")
     subject: str = Field(..., description="Subject being tutored")
     start_time: datetime = Field(..., description="Booking start time")
     end_time: datetime = Field(..., description="Booking end time")
@@ -49,8 +49,8 @@ class BookingList(BaseModel):
     """Booking list item model."""
 
     id: int = Field(..., description="Booking ID")
-    student_id: int = Field(..., description="Student ID")
-    tutor_id: int = Field(..., description="Tutor ID")
+    student_id: str = Field(..., description="Student ID")
+    tutor_id: str = Field(..., description="Tutor ID")
     subject: str = Field(..., description="Subject being tutored")
     start_time: datetime = Field(..., description="Booking start time")
     end_time: datetime = Field(..., description="Booking end time")
@@ -68,7 +68,7 @@ class AvailabilityRequest(BaseModel):
 class AvailabilityResponse(BaseModel):
     """Availability check response model."""
 
-    tutor_id: int = Field(..., description="Tutor ID")
+    tutor_id: str = Field(..., description="Tutor ID")
     start_time: datetime = Field(..., description="Requested start time")
     end_time: datetime = Field(..., description="Requested end time")
     is_available: bool = Field(..., description="Whether the time slot is available")
