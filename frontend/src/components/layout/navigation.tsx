@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, GraduationCap, LogOut, Settings, User } from 'lucide-react';
+import { BookOpen, GraduationCap, LogOut, Settings, User, Users } from 'lucide-react';
 import Link from 'next/link';
 
 export function Navigation() {
@@ -47,12 +47,25 @@ export function Navigation() {
             
             {user && (
               <div className="hidden md:flex items-center space-x-4">
-                <Link href="/tutors" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                  Find Tutors
-                </Link>
-                <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                  My Bookings
-                </Link>
+                {user.role === 'tutor' ? (
+                  <>
+                    <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                      My Sessions
+                    </Link>
+                    <Link href="/availability" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                      Availability
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/tutors" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                      Find Tutors
+                    </Link>
+                    <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                      My Bookings
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -101,9 +114,17 @@ export function Navigation() {
                     </DropdownMenuItem>
                     {user.role === 'tutor' && (
                       <DropdownMenuItem asChild>
-                        <Link href="/tutor-dashboard" className="flex items-center">
+                        <Link href="/dashboard/tutor" className="flex items-center">
                           <GraduationCap className="mr-2 h-4 w-4" />
                           Tutor Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
+                    {user.role === 'admin' && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin/tutors" className="flex items-center">
+                          <Users className="mr-2 h-4 w-4" />
+                          Manage Tutors
                         </Link>
                       </DropdownMenuItem>
                     )}

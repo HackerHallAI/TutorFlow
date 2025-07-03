@@ -13,6 +13,34 @@ export interface Tutor {
   created_at: string;
 }
 
+export interface TutorProfile {
+  user_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  bio?: string;
+  phone?: string;
+  avatar_url?: string;
+  subjects: string[];
+  hourly_rate: number;
+  availability_schedule: Record<string, unknown>;
+  is_verified: boolean;
+  rating?: number;
+  total_sessions: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorProfileFormData {
+  first_name: string;
+  last_name: string;
+  bio?: string;
+  phone?: string;
+  subjects: string[];
+  hourly_rate: number;
+  availability_schedule?: Record<string, unknown>;
+}
+
 export interface TutorDetail extends Tutor {
   phone?: string;
   availability_schedule?: string;
@@ -29,6 +57,7 @@ export interface Booking {
   notes?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   created_at: string;
+  updated_at: string;
 }
 
 export interface BookingCreate {
@@ -68,4 +97,14 @@ export interface TutorFilters {
   max_rate?: number;
   skip?: number;
   limit?: number;
+  verified_only?: boolean;
+}
+
+export interface TutorDashboardStats {
+  totalSessions: number;
+  upcomingSessions: number;
+  totalEarnings: number;
+  averageRating: number;
+  completedSessions: number;
+  pendingSessions: number;
 } 

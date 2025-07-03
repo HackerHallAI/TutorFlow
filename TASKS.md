@@ -104,10 +104,12 @@
   - [x] Tutor model with subjects, rates, availability
   - [x] GET /users/tutors endpoint
   - [x] GET /users/tutors/{id} endpoint
-  - [ ] Tutor profile creation/update endpoints
-  - [ ] Subject and rate management
+  - [x] Tutor profile creation/update endpoints
+  - [x] Subject and rate management
+  - [x] Admin account creation system
+  - [x] Tutor verification system
   - **Due:** Week 3
-  - **Status:** Started
+  - **Status:** Completed
 
 - [ ] **Task 3.2:** Build availability management
   - [ ] Availability schedule model

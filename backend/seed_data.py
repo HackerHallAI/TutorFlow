@@ -237,8 +237,67 @@ def create_fake_students():
         db.close()
 
 
+def create_admin_user():
+    """Create a default admin user for testing."""
+
+    admin_data = {
+        "email": "admin@tutorflow.com",
+        "password": "admin123",
+        "first_name": "Admin",
+        "last_name": "User",
+    }
+
+    db = SessionLocal()
+
+    try:
+        # Check if admin already exists
+        existing_user = db.query(User).filter(User.email == admin_data["email"]).first()
+        if existing_user:
+            print(f"Admin user {admin_data['email']} already exists, skipping...")
+            return
+
+        # Create admin user
+        user = User(
+            id=str(uuid.uuid4()),
+            email=admin_data["email"],
+            password_hash=get_password_hash(admin_data["password"]),
+            role=UserRole.ADMIN,
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(user)
+        db.flush()  # Get the user ID
+
+        # Create user profile
+        profile = UserProfile(
+            user_id=user.id,
+            first_name=admin_data["first_name"],
+            last_name=admin_data["last_name"],
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.add(profile)
+
+        print(
+            f"Created admin user: {admin_data['first_name']} {admin_data['last_name']}"
+        )
+        print(f"Email: {admin_data['email']}")
+        print(f"Password: {admin_data['password']}")
+
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating admin user: {e}")
+        raise
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     print("Seeding database with fake data...")
     create_fake_tutors()
     create_fake_students()
+    create_admin_user()
     print("Database seeding completed!")

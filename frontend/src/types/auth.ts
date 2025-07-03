@@ -36,7 +36,7 @@ export interface RegisterRequest {
   password: string;
   first_name: string;
   last_name: string;
-  role: 'student' | 'tutor';
+  role: 'student' | 'tutor' | 'admin';
 }
 
 export interface AuthResponse {

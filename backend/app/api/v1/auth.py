@@ -5,7 +5,7 @@ This module contains all authentication-related endpoints including
 registration, login, logout, and token refresh.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
@@ -19,7 +19,7 @@ from app.core.auth import (
     verify_password,
 )
 from app.database import get_db
-from app.models.user import User, UserProfile
+from app.models.user import User, UserProfile, UserRole
 from app.schemas.auth import (
     LoginRequest,
     LoginResponse,
@@ -222,3 +222,83 @@ async def get_current_user_info(
         role=current_user.role,
         is_active=current_user.is_active,
     )
+
+
+@router.post("/create-admin")
+async def create_admin(
+    admin_data: dict,
+    secret_key: str = Query(..., description="Secret key required to create admin"),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Create an admin user (protected by secret key).
+
+    Args:
+        admin_data: Admin user data
+        secret_key: Secret key for admin creation
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If secret key is invalid or user already exists
+    """
+    import os
+    import uuid
+    from datetime import datetime
+
+    # Check secret key (you should set this as an environment variable)
+    expected_secret = os.getenv("ADMIN_CREATION_SECRET", "tutorflow-admin-2024")
+    if secret_key != expected_secret:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret key"
+        )
+
+    # Validate required fields
+    required_fields = ["email", "password", "first_name", "last_name"]
+    for field in required_fields:
+        if field not in admin_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required field: {field}",
+            )
+
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == admin_data["email"]).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists",
+        )
+
+    # Create admin user
+    admin_user = User(
+        id=str(uuid.uuid4()),
+        email=admin_data["email"],
+        password_hash=get_password_hash(admin_data["password"]),
+        role=UserRole.ADMIN,
+        is_active=True,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(admin_user)
+    db.flush()  # Get the user ID
+
+    # Create user profile
+    admin_profile = UserProfile(
+        user_id=admin_user.id,
+        first_name=admin_data["first_name"],
+        last_name=admin_data["last_name"],
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+    )
+    db.add(admin_profile)
+
+    db.commit()
+
+    return {
+        "message": "Admin user created successfully",
+        "user_id": admin_user.id,
+        "email": admin_user.email,
+    }

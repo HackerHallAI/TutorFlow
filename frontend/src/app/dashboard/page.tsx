@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { Navigation } from '@/components/layout/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,15 +10,26 @@ import { BookOpen, Calendar, GraduationCap, Users, ArrowRight } from 'lucide-rea
 import Link from 'next/link';
 import { tutorApi, bookingApi } from '@/lib/api';
 import { Tutor, Booking } from '@/types/tutor';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect tutors to their specific dashboard
+    if (user?.role === 'tutor') {
+      router.push('/dashboard/tutor');
+      return;
+    }
+    
     loadDashboardData();
-  }, []);
+  }, [user, router]);
+
+
 
   const loadDashboardData = async () => {
     try {

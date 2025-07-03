@@ -9,6 +9,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import json
 
 from app.core.auth import get_current_user, require_roles
 from app.database import get_db
@@ -84,6 +85,189 @@ async def update_user_profile(
     )
 
 
+@router.get("/tutor/profile")
+async def get_tutor_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get current tutor's profile information.
+
+    Args:
+        current_user: Current authenticated user (must be tutor)
+        db: Database session
+
+    Returns:
+        dict: Tutor profile information
+
+    Raises:
+        HTTPException: If user is not a tutor
+    """
+    if current_user.role != UserRole.TUTOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only tutors can access tutor profile",
+        )
+
+    # Get tutor profile
+    tutor = db.query(Tutor).filter(Tutor.user_id == current_user.id).first()
+    if not tutor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tutor profile not found"
+        )
+
+    # Get user profile
+    profile = (
+        db.query(UserProfileModel)
+        .filter(UserProfileModel.user_id == current_user.id)
+        .first()
+    )
+
+    return {
+        "user_id": current_user.id,
+        "email": current_user.email,
+        "first_name": profile.first_name if profile else "",
+        "last_name": profile.last_name if profile else "",
+        "bio": profile.bio if profile else "",
+        "phone": profile.phone if profile else "",
+        "avatar_url": profile.avatar_url if profile else "",
+        "subjects": json.loads(tutor.subjects) if tutor.subjects else [],
+        "hourly_rate": tutor.hourly_rate,
+        "availability_schedule": (
+            json.loads(tutor.availability_schedule)
+            if tutor.availability_schedule
+            else {}
+        ),
+        "is_verified": tutor.is_verified,
+        "rating": tutor.rating,
+        "total_sessions": tutor.total_sessions,
+        "created_at": tutor.created_at,
+        "updated_at": tutor.updated_at,
+    }
+
+
+@router.post("/tutor/profile")
+async def create_tutor_profile(
+    tutor_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Create or update tutor profile.
+
+    Args:
+        tutor_data: Tutor profile data
+        current_user: Current authenticated user (must be tutor)
+        db: Database session
+
+    Returns:
+        dict: Created/updated tutor profile
+
+    Raises:
+        HTTPException: If user is not a tutor or validation fails
+    """
+    if current_user.role != UserRole.TUTOR:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only tutors can create tutor profiles",
+        )
+
+    # Validate required fields
+    required_fields = ["subjects", "hourly_rate"]
+    for field in required_fields:
+        if field not in tutor_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required field: {field}",
+            )
+
+    # Validate hourly rate
+    if tutor_data["hourly_rate"] <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Hourly rate must be greater than 0",
+        )
+
+    # Check if tutor profile already exists
+    existing_tutor = db.query(Tutor).filter(Tutor.user_id == current_user.id).first()
+
+    if existing_tutor:
+        # Update existing profile
+        existing_tutor.subjects = json.dumps(tutor_data["subjects"])
+        existing_tutor.hourly_rate = tutor_data["hourly_rate"]
+        if "availability_schedule" in tutor_data:
+            existing_tutor.availability_schedule = json.dumps(
+                tutor_data["availability_schedule"]
+            )
+        db.commit()
+        db.refresh(existing_tutor)
+        tutor = existing_tutor
+    else:
+        # Create new profile
+        tutor = Tutor(
+            user_id=current_user.id,
+            subjects=json.dumps(tutor_data["subjects"]),
+            hourly_rate=tutor_data["hourly_rate"],
+            availability_schedule=json.dumps(
+                tutor_data.get("availability_schedule", {})
+            ),
+        )
+        db.add(tutor)
+        db.commit()
+        db.refresh(tutor)
+
+    # Update user profile if provided
+    if (
+        "first_name" in tutor_data
+        or "last_name" in tutor_data
+        or "bio" in tutor_data
+        or "phone" in tutor_data
+    ):
+        profile = (
+            db.query(UserProfileModel)
+            .filter(UserProfileModel.user_id == current_user.id)
+            .first()
+        )
+
+        if not profile:
+            profile = UserProfileModel(
+                user_id=current_user.id,
+                first_name=tutor_data.get("first_name", ""),
+                last_name=tutor_data.get("last_name", ""),
+                bio=tutor_data.get("bio", ""),
+                phone=tutor_data.get("phone", ""),
+            )
+            db.add(profile)
+        else:
+            if "first_name" in tutor_data:
+                profile.first_name = tutor_data["first_name"]
+            if "last_name" in tutor_data:
+                profile.last_name = tutor_data["last_name"]
+            if "bio" in tutor_data:
+                profile.bio = tutor_data["bio"]
+            if "phone" in tutor_data:
+                profile.phone = tutor_data["phone"]
+
+        db.commit()
+        db.refresh(profile)
+
+    return {
+        "user_id": current_user.id,
+        "subjects": json.loads(tutor.subjects),
+        "hourly_rate": tutor.hourly_rate,
+        "availability_schedule": (
+            json.loads(tutor.availability_schedule)
+            if tutor.availability_schedule
+            else {}
+        ),
+        "is_verified": tutor.is_verified,
+        "rating": tutor.rating,
+        "total_sessions": tutor.total_sessions,
+        "created_at": tutor.created_at,
+        "updated_at": tutor.updated_at,
+    }
+
+
 @router.get("/", response_model=List[UserList])
 @require_roles([UserRole.ADMIN])
 async def list_users(
@@ -148,6 +332,7 @@ async def list_tutors(
     subject: str = Query(None, description="Filter by subject"),
     min_rate: float = Query(None, ge=0, description="Minimum hourly rate"),
     max_rate: float = Query(None, ge=0, description="Maximum hourly rate"),
+    verified_only: bool = Query(True, description="Show only verified tutors"),
     db: Session = Depends(get_db),
 ):
     from sqlalchemy import func
@@ -156,14 +341,20 @@ async def list_tutors(
         db.query(Tutor, User, UserProfileModel)
         .join(User, Tutor.user_id == User.id)
         .join(UserProfileModel, User.id == UserProfileModel.user_id)
-        .filter(User.is_active == True, Tutor.is_verified == True)
+        .filter(User.is_active == True)
     )
+
+    # Filter by verification status if requested
+    if verified_only:
+        query = query.filter(Tutor.is_verified == True)
+
     if subject:
         query = query.filter(func.lower(Tutor.subjects).like(f"%{subject.lower()}%"))
     if min_rate is not None:
         query = query.filter(Tutor.hourly_rate >= min_rate)
     if max_rate is not None:
         query = query.filter(Tutor.hourly_rate <= max_rate)
+
     results = query.offset(skip).limit(limit).all()
     tutors = []
     for tutor, user, profile in results:
@@ -349,7 +540,7 @@ async def update_user_status(
         )
 
     # Prevent admin from deactivating themselves
-    if user.id == current_user.id:
+    if user.id == current_user.id and not is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot deactivate your own account",
@@ -358,5 +549,43 @@ async def update_user_status(
     user.is_active = is_active
     db.commit()
 
-    status_text = "activated" if is_active else "deactivated"
-    return {"message": f"User {status_text} successfully"}
+    return {
+        "message": f"User status updated to {'active' if is_active else 'inactive'}"
+    }
+
+
+@router.put("/tutors/{tutor_id}/verify")
+@require_roles([UserRole.ADMIN])
+async def verify_tutor(
+    tutor_id: str,
+    is_verified: bool = True,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Verify or unverify a tutor (admin only).
+
+    Args:
+        tutor_id: ID of the tutor to verify
+        is_verified: Verification status
+        current_user: Current authenticated user (must be admin)
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If tutor not found or current user is not admin
+    """
+    tutor = db.query(Tutor).filter(Tutor.user_id == tutor_id).first()
+    if not tutor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Tutor not found"
+        )
+
+    tutor.is_verified = is_verified
+    db.commit()
+
+    return {
+        "message": f"Tutor verification status updated to {'verified' if is_verified else 'unverified'}"
+    }
