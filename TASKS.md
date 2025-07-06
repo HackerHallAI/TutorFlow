@@ -374,6 +374,16 @@
 ## Completed Tasks
 *Completed tasks will be moved here with completion dates*
 
+### Authentication & Navigation Fixes
+- [x] **Logout redirect to home page** - Fixed logout function to redirect users to home page after clearing authentication state
+  - **Date:** December 2024
+  - **Details:** Updated auth context to include router navigation in logout function
+
+### Data Type Consistency Fixes
+- [x] **Tutor profile subjects data type mismatch** - Fixed inconsistency between backend and frontend data types for tutor subjects
+  - **Date:** December 2024
+  - **Details:** Updated frontend Tutor interface to use subjects as string[] instead of string, and updated all components to handle subjects as arrays directly instead of parsing JSON
+
 ---
 
 **Last Updated:** [Current Date]  

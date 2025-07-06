@@ -49,14 +49,14 @@ export default function TutorsPage() {
         tutor.first_name.toLowerCase().includes(term) ||
         tutor.last_name.toLowerCase().includes(term) ||
         tutor.bio?.toLowerCase().includes(term) ||
-        tutor.subjects.toLowerCase().includes(term)
+        tutor.subjects.some(subject => subject.toLowerCase().includes(term))
       );
     }
 
     // Filter by subject
     if (selectedSubject && selectedSubject !== 'all') {
       filtered = filtered.filter(tutor => 
-        tutor.subjects.toLowerCase().includes(selectedSubject.toLowerCase())
+        tutor.subjects.some(subject => subject.toLowerCase().includes(selectedSubject.toLowerCase()))
       );
     }
 
@@ -77,12 +77,7 @@ export default function TutorsPage() {
   const getUniqueSubjects = () => {
     const allSubjects = new Set<string>();
     tutors.forEach(tutor => {
-      try {
-        const subjects = JSON.parse(tutor.subjects || '[]');
-        subjects.forEach((subject: string) => allSubjects.add(subject));
-      } catch {
-        // Handle invalid JSON
-      }
+      tutor.subjects.forEach((subject: string) => allSubjects.add(subject));
     });
     return Array.from(allSubjects).sort();
   };

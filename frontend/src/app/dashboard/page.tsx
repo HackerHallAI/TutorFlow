@@ -58,7 +58,7 @@ export default function DashboardPage() {
     const allSubjects = new Set<string>();
     tutors.forEach(tutor => {
       try {
-        const subjects = JSON.parse(tutor.subjects || '[]');
+        const subjects = tutor.subjects || [];
         subjects.forEach((subject: string) => allSubjects.add(subject));
       } catch {
         // Handle invalid JSON
@@ -207,6 +207,7 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </div>
+
           </div>
         </main>
       </div>

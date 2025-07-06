@@ -5,7 +5,7 @@ export interface Tutor {
   last_name: string;
   bio?: string;
   avatar_url?: string;
-  subjects: string;
+  subjects: string[];
   hourly_rate: number;
   rating?: number;
   total_sessions: number;

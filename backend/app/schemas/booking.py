@@ -8,6 +8,7 @@ requests and responses.
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from uuid import UUID
 
 from app.models.user import BookingStatus
 
@@ -28,8 +29,8 @@ class BookingResponse(BaseModel):
     """Booking response model."""
 
     id: int = Field(..., description="Booking ID")
-    student_id: str = Field(..., description="Student ID")
-    tutor_id: str = Field(..., description="Tutor ID")
+    student_id: UUID = Field(..., description="Student ID")
+    tutor_id: UUID = Field(..., description="Tutor ID")
     subject: str = Field(..., description="Subject being tutored")
     start_time: datetime = Field(..., description="Booking start time")
     end_time: datetime = Field(..., description="Booking end time")
@@ -49,8 +50,8 @@ class BookingList(BaseModel):
     """Booking list item model."""
 
     id: int = Field(..., description="Booking ID")
-    student_id: str = Field(..., description="Student ID")
-    tutor_id: str = Field(..., description="Tutor ID")
+    student_id: UUID = Field(..., description="Student ID")
+    tutor_id: UUID = Field(..., description="Tutor ID")
     subject: str = Field(..., description="Subject being tutored")
     start_time: datetime = Field(..., description="Booking start time")
     end_time: datetime = Field(..., description="Booking end time")

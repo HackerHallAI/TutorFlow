@@ -60,7 +60,7 @@ export default function TutorProfilePage() {
     );
   }
 
-  const subjects = tutor.subjects ? JSON.parse(tutor.subjects) : [];
+  const subjects = tutor.subjects || [];
   const initials = `${tutor.first_name[0]}${tutor.last_name[0]}`;
 
   return (

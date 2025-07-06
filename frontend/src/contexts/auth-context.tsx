@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, LoginRequest, RegisterRequest, AuthContextType } from '@/types/auth';
 import { authApi, userApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -10,6 +11,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Check for existing token and validate it
@@ -99,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refresh_token');
     setUser(null);
     toast.success('Logged out successfully');
+    router.push('/');
   };
 
   const refreshToken = async () => {
@@ -111,7 +114,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authApi.refreshToken(refreshToken);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      setUser(response.user);
+      
+      // Create user object from response data
+      const user: User = {
+        id: response.user_id,
+        email: response.email,
+        first_name: response.first_name,
+        last_name: response.last_name,
+        role: response.role,
+        is_active: true, // Assuming active if refresh successful
+        created_at: new Date().toISOString(), // Will be updated by getCurrentUser if needed
+        updated_at: new Date().toISOString(),
+      };
+      
+      setUser(user);
     } catch (error) {
       // Refresh failed, logout user
       logout();

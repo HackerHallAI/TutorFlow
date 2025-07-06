@@ -217,7 +217,6 @@ interface TutorRowProps {
 }
 
 function TutorRow({ tutor, onVerify, verifying }: TutorRowProps) {
-  const subjects = JSON.parse(tutor.subjects || '[]');
   const initials = `${tutor.first_name[0]}${tutor.last_name[0]}`;
 
   return (
@@ -265,17 +264,15 @@ function TutorRow({ tutor, onVerify, verifying }: TutorRowProps) {
                 <span className="font-medium">${tutor.hourly_rate}/hr</span>
               </div>
               
-              <div className="flex flex-wrap gap-1 mt-2">
-                {subjects.slice(0, 3).map((subject: string, index: number) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {subject}
-                  </Badge>
-                ))}
-                {subjects.length > 3 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{subjects.length - 3} more
-                  </Badge>
-                )}
+              <div className="flex flex-wrap gap-1">
+                {(() => {
+                  const subjects = tutor.subjects || [];
+                  return subjects.map((subject: string, index: number) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {subject}
+                    </Badge>
+                  ));
+                })()}
               </div>
             </div>
           </div>
