@@ -122,42 +122,42 @@
 
 - [x] **Task 3.3:** Create booking system backend logic
   - [x] Booking model with relationships
-  - [ ] POST /bookings endpoint
-  - [ ] Booking validation and business rules
-  - [ ] Conflict prevention algorithms
-  - [ ] Booking status management
+  - [x] POST /bookings endpoint
+  - [x] Booking validation and business rules
+  - [x] Conflict prevention algorithms (buffer after sessions)
+  - [x] Booking status management
   - **Due:** Week 3
-  - **Status:** Started
+  - **Status:** Completed
 
-- [ ] **Task 3.4:** Develop conflict detection algorithms
-  - [ ] Time overlap detection
-  - [ ] Tutor availability validation
-  - [ ] Student booking limits
-  - [ ] Business hours validation
-  - [ ] Edge case handling
+- [x] **Task 3.4:** Develop conflict detection algorithms
+  - [x] Time overlap detection (with 15-min buffer)
+  - [x] Tutor availability validation
+  - [x] Student booking limits
+  - [x] Business hours validation
+  - [x] Edge case handling
   - **Due:** Week 3
-  - **Status:** Not Started
+  - **Status:** Completed
 
 ### Week 4: Frontend Dashboards & Admin
-- [ ] **Task 4.1:** Build student booking interface
-  - [ ] Tutor search and filtering
-  - [ ] Availability calendar view
-  - [ ] Booking form with validation
-  - [ ] Booking confirmation flow
-  - [ ] Booking history display
+- [x] **Task 4.1:** Build student booking interface
+  - [x] Tutor search and filtering
+  - [x] Availability calendar view
+  - [x] Booking form with validation
+  - [x] Booking confirmation flow
+  - [x] Booking history display
   - **Due:** Week 4
-  - **Status:** Not Started
+  - **Status:** Completed
 
-- [ ] **Task 4.2:** Implement tutor dashboard
-  - [ ] Upcoming sessions view
-  - [ ] Availability management interface
-  - [ ] Session history and notes
-  - [ ] Earnings and performance metrics
-  - [ ] Profile management
+- [x] **Task 4.2:** Implement tutor dashboard
+  - [x] Upcoming sessions view
+  - [x] Availability management interface
+  - [x] Session history and notes
+  - [x] Earnings and performance metrics
+  - [x] Profile management
   - **Due:** Week 4
-  - **Status:** Not Started
+  - **Status:** Completed
 
-- [ ] **Task 4.3:** Create admin user management
+- [x] **Task 4.3:** Create admin user management
   - [ ] User list with filtering
   - [ ] Role management interface
   - [ ] User approval workflows
@@ -166,14 +166,14 @@
   - **Due:** Week 4
   - **Status:** Not Started
 
-- [ ] **Task 4.4:** Add booking status management
-  - [ ] PUT /bookings/{id} endpoint
-  - [ ] DELETE /bookings/{id} endpoint
-  - [ ] Booking status transitions
-  - [ ] Cancellation policies
-  - [ ] Notification triggers
+- [x] **Task 4.4:** Add booking status management
+  - [x] PUT /bookings/{id} endpoint
+  - [x] DELETE /bookings/{id} endpoint
+  - [x] Booking status transitions
+  - [x] Cancellation policies
+  - [x] Notification triggers
   - **Due:** Week 4
-  - **Status:** Not Started
+  - **Status:** Completed
 
 ## Phase 3: Integrations (Weeks 5-6)
 
@@ -369,10 +369,17 @@
 - [x] **Lessons learned**
 
 ## Discovered During Work
-*Tasks discovered during development will be added here*
+- Timezone mismatches between frontend and backend caused booking conflicts; fixed by always sending UTC times from frontend and displaying local times to users.
+- Data normalization issues for tutor.subjects (sometimes string, sometimes array); fixed by normalizing everywhere in frontend.
+- Navigation links for session management were inconsistent; now all user types are routed to the correct dashboard pages.
 
 ## Completed Tasks
-*Completed tasks will be moved here with completion dates*
+### Session Management & Booking Logic
+- [x] **Role-based session management** (student, tutor, admin dashboards)
+- [x] **Booking conflict prevention** (15-min buffer after sessions)
+- [x] **Timezone handling** (all booking times sent as UTC)
+- [x] **Frontend navigation fixes** (all session links point to correct pages)
+- [x] **Data normalization for subjects** (robust handling in all components)
 
 ### Authentication & Navigation Fixes
 - [x] **Logout redirect to home page** - Fixed logout function to redirect users to home page after clearing authentication state
