@@ -199,7 +199,7 @@ export default function DashboardPage() {
                     View and manage your upcoming and past tutoring sessions.
                   </p>
                   <Button asChild variant="outline">
-                    <Link href="/bookings" className="flex items-center space-x-2">
+                    <Link href="/dashboard/bookings" className="flex items-center space-x-2">
                       <span>View Bookings</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>

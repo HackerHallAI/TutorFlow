@@ -265,7 +265,7 @@ export default function TutorDashboardPage() {
                     View and manage your upcoming and past tutoring sessions.
                   </p>
                   <Button asChild>
-                    <Link href="/bookings" className="flex items-center space-x-2">
+                    <Link href="/dashboard/tutor/sessions" className="flex items-center space-x-2">
                       <span>View Sessions</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>

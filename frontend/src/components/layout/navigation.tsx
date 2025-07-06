@@ -49,7 +49,7 @@ export function Navigation() {
               <div className="hidden md:flex items-center space-x-4">
                 {user.role === 'tutor' ? (
                   <>
-                    <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                    <Link href="/dashboard/tutor/sessions" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                       My Sessions
                     </Link>
                     <Link href="/availability" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
@@ -61,7 +61,7 @@ export function Navigation() {
                     <Link href="/tutors" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                       Find Tutors
                     </Link>
-                    <Link href="/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                    <Link href="/dashboard/bookings" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                       My Bookings
                     </Link>
                   </>
