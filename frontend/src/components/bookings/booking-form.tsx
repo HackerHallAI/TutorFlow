@@ -64,12 +64,14 @@ export function BookingForm({ tutorId, subjects, onSuccess }: BookingFormProps) 
     fetchSlots();
   }, [form.watch('date'), form.watch('duration'), tutorId]);
 
-  // Helper to combine date and time into ISO string
+  // Helper to combine date and time into UTC ISO string
   const combineDateTime = (date: Date, time: string) => {
     const [hours, minutes] = time.split(':').map(Number);
+    // Create a new Date in local time, then convert to UTC
     const dt = new Date(date);
     dt.setHours(hours, minutes, 0, 0);
-    return dt.toISOString();
+    // Return as UTC ISO string
+    return new Date(Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate(), dt.getHours(), dt.getMinutes())).toISOString();
   };
 
   const onSubmit = async (data: z.infer<typeof bookingSchema>) => {
@@ -122,7 +124,11 @@ export function BookingForm({ tutorId, subjects, onSuccess }: BookingFormProps) 
             <FormItem>
               <FormLabel>Session Duration</FormLabel>
               <FormControl>
-                <select {...field} className="w-full border rounded px-3 py-2">
+                <select
+                  {...field}
+                  className="w-full border rounded px-3 py-2"
+                  onChange={e => field.onChange(Number(e.target.value))}
+                >
                   <option value={30}>30 minutes</option>
                   <option value={60}>60 minutes</option>
                 </select>

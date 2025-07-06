@@ -77,7 +77,17 @@ export default function TutorsPage() {
   const getUniqueSubjects = () => {
     const allSubjects = new Set<string>();
     tutors.forEach(tutor => {
-      tutor.subjects.forEach((subject: string) => allSubjects.add(subject));
+      let subjects: string[] = [];
+      if (Array.isArray(tutor.subjects)) {
+        subjects = tutor.subjects;
+      } else if (typeof tutor.subjects === 'string') {
+        try {
+          subjects = JSON.parse(tutor.subjects);
+        } catch {
+          subjects = [];
+        }
+      }
+      subjects.forEach((subject: string) => allSubjects.add(subject));
     });
     return Array.from(allSubjects).sort();
   };

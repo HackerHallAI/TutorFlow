@@ -13,7 +13,16 @@ interface TutorCardProps {
 }
 
 export function TutorCard({ tutor }: TutorCardProps) {
-  const subjects = tutor.subjects || [];
+  let subjects: string[] = [];
+  if (Array.isArray(tutor.subjects)) {
+    subjects = tutor.subjects;
+  } else if (typeof tutor.subjects === 'string') {
+    try {
+      subjects = JSON.parse(tutor.subjects);
+    } catch {
+      subjects = [];
+    }
+  }
   const initials = `${tutor.first_name[0]}${tutor.last_name[0]}`;
 
   return (
