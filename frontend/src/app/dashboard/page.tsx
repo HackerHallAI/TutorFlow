@@ -26,6 +26,7 @@ export default function DashboardPage() {
       return;
     }
     
+    // Load dashboard data (tutors are public, bookings require auth)
     loadDashboardData();
   }, [user, router]);
 
@@ -34,14 +35,27 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [tutorsData, bookingsData] = await Promise.all([
-        tutorApi.getTutors({ limit: 100 }),
-        bookingApi.getBookings()
-      ]);
+      
+      // Load tutors (public endpoint)
+      const tutorsData = await tutorApi.getTutors({ limit: 100 });
       setTutors(tutorsData);
-      setBookings(bookingsData);
+      
+      // Load bookings only if user is authenticated
+      if (user) {
+        try {
+          const bookingsData = await bookingApi.getBookings();
+          setBookings(bookingsData);
+        } catch (error) {
+          console.error('Error loading bookings:', error);
+          // Don't fail the whole dashboard if bookings fail
+          setBookings([]);
+        }
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // Set default empty data on error
+      setTutors([]);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
