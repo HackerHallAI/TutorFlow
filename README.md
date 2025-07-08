@@ -4,6 +4,8 @@ A modern, full-stack tutoring platform built with FastAPI, Next.js 15, and AWS. 
 
 ## 🎯 Project Overview
 
+Job posting was pulled down right as I submitted my proposal with this functional demo. Devastating!
+
 **TutorFlow** is a comprehensive tutoring platform that connects students with qualified tutors through an intuitive booking system, integrated payment processing, and virtual classroom capabilities.
 
 ### Key Features
